@@ -4,7 +4,7 @@ on:
   schedule:
     # toda quinta 11:00 UTC (08:00 Fortaleza UTC-3)
     - cron: "0 11 * * 4"
-  workflow_dispatch: {}  # habilita botão "Run workflow" manual
+  workflow_dispatch: {}  # habilita botão 'Run workflow' manual
 
 jobs:
   run:
@@ -30,4 +30,3 @@ jobs:
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           EMAIL_TO_PORTOS: ${{ secrets.EMAIL_TO_PORTOS }}
         run: python monitor_portos.py
-
