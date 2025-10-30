@@ -1,3 +1,32 @@
-git add .github/workflows/portos.yml monitor_portos.py sources_portos.yml requirements.txt README_Radar_Portos.md
-git commit -m "add radar portos monitor and workflow"
-git push
+name: Radar Portos (Brasil)
+
+on:
+  schedule:
+    # toda quinta 11:00 UTC (08:00 Fortaleza UTC-3)
+    - cron: "0 11 * * 4"
+  workflow_dispatch:  # permite rodar manualmente pelo botão Run workflow
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install requirements
+        run: pip install -r requirements.txt
+
+      - name: Run monitor_portos.py
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          EMAIL_TO_PORTOS: ${{ secrets.EMAIL_TO_PORTOS }}
+        run: python monitor_portos.py
