@@ -1,28 +1,25 @@
-- nome: Porto do Itaqui
-  tipo: rss
-  url: "https://www.portodoitaqui.ma.gov.br/rss"   # se o Itaqui tiver RSS oficial; se não tiver, você pode mudar para tipo: html e selectors
+fontes:
 
-- nome: Porto de Santos
-  tipo: html
-  url: "https://www.portodesantos.com.br/noticias"
-  item_selector: "div.card-noticia, div.noticia, article"
-  title_selector: "h3, h2, .titulo, .card-title"
-  link_selector: "a"
-  date_selector: ".data, time, .card-date"
+  - name: Porto do Itaqui (MA)
+    url: "https://www.portodoitaqui.ma.gov.br/noticias"
+    base: "https://www.portodoitaqui.ma.gov.br"
+    pattern_item: "<article[\\s\\S]*?</article>"
+    pattern_title: "<h2[^>]*>(.*?)</h2>"
+    pattern_link: "<a[^>]*href=['\"]([^'\"]+)['\"][^>]*>\\s*<h2"
+    pattern_date: "<time[^>]*>(.*?)</time>"
 
-- nome: Porto de Suape
-  tipo: html
-  url: "https://www.suape.pe.gov.br/noticias"
-  item_selector: "div.noticia-item, article, .noticia"
-  title_selector: "h2, h3, .titulo"
-  link_selector: "a"
-  date_selector: ".data, time"
+  - name: Porto de Santos (SP)
+    url: "https://www.portodesantos.com.br/noticias/"
+    base: "https://www.portodesantos.com.br"
+    pattern_item: "<article[\\s\\S]*?</article>"
+    pattern_title: "<h2[^>]*class=\"entry-title\"[^>]*>(.*?)</h2>"
+    pattern_link: "<h2[^>]*class=\"entry-title\"[^>]*>\\s*<a[^>]*href=['\"]([^'\"]+)['\"]"
+    pattern_date: "<time[^>]*datetime=['\"][^'\"]+['\"][^>]*>(.*?)</time>"
 
-- nome: Ministério de Portos e Aeroportos
-  tipo: html
-  url: "https://www.gov.br/portos-e-aeroportos/pt-br/assuntos/noticias"
-  item_selector: "article.portaltype-collective-nitf-content, article.tileItem"
-  title_selector: "h2.tileHeadline, h2 a, .summary .title"
-  link_selector: "a"
-  date_selector: "span.tileInfo, time, .documentPublished"
-
+  - name: Porto de Suape (PE)
+    url: "https://www.suape.pe.gov.br/noticias"
+    base: "https://www.suape.pe.gov.br"
+    pattern_item: "<div class=\"noticia\"[\\s\\S]*?</div>\\s*</div>"
+    pattern_title: "<h3[^>]*>(.*?)</h3>"
+    pattern_link: "<a[^>]*href=['\"]([^'\"]+)['\"][^>]*class=\"link-noticia\""
+    pattern_date: "<span[^>]*class=\"data\"[^>]*>(.*?)</span>"
