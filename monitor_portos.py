@@ -1,177 +1,63 @@
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+import yaml
+import datetime
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import os
+import urllib.parse
+
+# -------------------------
+# Configuração geral
+# -------------------------
+
+DIAS_JANELA = 14  # últimos 14 dias
+
+# Vamos ler credenciais dos envs que o workflow injeta
+GMAIL_USER = os.getenv("GMAIL_USER", "")
+GMAIL_PASS = os.getenv("GMAIL_APP_PASS", "")
+EMAIL_TO = os.getenv("EMAIL_TO_PORTOS", "")
+
+if not (GMAIL_USER and GMAIL_PASS and EMAIL_TO):
+    print("⚠️ Credenciais ausentes (GMAIL_USER / GMAIL_APP_PASS / EMAIL_TO_PORTOS).")
+    # não damos exit(1) pra você poder testar local sem segredo
+    # mas no Actions isso vai acabar falhando no envio de e-mail depois
 
 
-# ---------------------------------
-# CONFIGURAÇÃO
-# ---------------------------------
+# -------------------------
+# Helpers
+# -------------------------
 
-# quantos dias atrás a gente considera "recente"
-DIAS_JANELA = 7
-
-# fontes que vamos monitorar
-FONTES = [
-    {
-        "nome": "Porto do Itaqui - Notícias",
-        "url": "https://www.portodoitaqui.ma.gov.br/noticias",
-        "tipo": "lista_cards",
-        # mapeamento de CSS para tentar extrair título, link e data
-        "selectors": {
-            "item": ".noticia, .card-noticia, article, .post",
-            "titulo": ["h2", "h3", ".titulo", ".title", ".card-title"],
-            "link": ["a"],
-            "data": [".data", ".post-date", "time", ".dt", ".published"]
-        },
-        "formato_data": [
-            "%d/%m/%Y",
-            "%d-%m-%Y",
-            "%d.%m.%Y",
-            "%Y-%m-%d",
-            "%d %b %Y",
-            "%d %B %Y"
-        ],
-        "force_domain": "https://www.portodoitaqui.ma.gov.br"
-    },
-    {
-        "nome": "Porto de Santos - Notícias",
-        "url": "https://www.portodesantos.com.br/noticias/",
-        "tipo": "lista_cards",
-        "selectors": {
-            "item": ".noticia, article, .post, .card",
-            "titulo": ["h2", "h3", ".entry-title", ".titulo"],
-            "link": ["a"],
-            "data": [".data", "time", ".entry-date"]
-        },
-        "formato_data": [
-            "%d/%m/%Y",
-            "%d %b %Y",
-            "%d %B %Y",
-            "%Y-%m-%d"
-        ],
-        "force_domain": "https://www.portodesantos.com.br"
-    },
-    {
-        "nome": "Porto de Suape - Notícias",
-        "url": "https://www.suape.pe.gov.br/noticias",
-        "tipo": "lista_cards",
-        "selectors": {
-            "item": ".noticia, article, .post, .blog-item, .card-noticia",
-            "titulo": ["h2", "h3", ".titulo", ".card-title", ".post-title"],
-            "link": ["a"],
-            "data": [".data", ".post-date", "time", ".published"]
-        },
-        "formato_data": [
-            "%d/%m/%Y",
-            "%d %b %Y",
-            "%d %B %Y",
-            "%Y-%m-%d"
-        ],
-        "force_domain": "https://www.suape.pe.gov.br"
-    },
-    {
-        "nome": "ANTAQ - Notícias",
-        "url": "https://www.gov.br/antaq/pt-br/assuntos/noticias",
-        "tipo": "lista_cards",
-        "selectors": {
-            "item": "article, .item",
-            "titulo": ["h2", "h3", ".titulo", ".title"],
-            "link": ["a"],
-            "data": [".documentByLine", ".tooltip", "time", ".published"]
-        },
-        "formato_data": [
-            "%d/%m/%Y",
-            "%d %b %Y",
-            "%d %B %Y",
-            "%Y-%m-%d"
-        ],
-        "force_domain": "https://www.gov.br"
-    }
-]
+def normalize_space(txt: str) -> str:
+    if not txt:
+        return ""
+    return " ".join(txt.split())
 
 
-# ---------------------------------
-# FUNÇÕES DE SUPORTE
-# ---------------------------------
-
-def normalizar_data(texto_data, formatos):
+def parse_br_date(date_str):
     """
-    Tenta interpretar uma string de data usando vários formatos.
+    Tenta ler datas tipo:
+      - '29/10/2025'
+      - '29.10.2025'
+      - '29-10-2025'
+      - '29 de outubro de 2025'
     Se não conseguir, retorna None.
     """
-    if not texto_data:
+    if not date_str:
         return None
 
-    texto_data = texto_data.strip()
-    # remove prefixos comuns
-    for prefix in ["Publicado em", "Publicada em", "Postado em", "Postado:", "Publicado:", "Data:", "Em:"]:
-        if texto_data.lower().startswith(prefix.lower()):
-            texto_data = texto_data[len(prefix):].strip()
+    date_str = date_str.strip().lower()
 
-    # tenta cada formato conhecido
-    for fmt in formatos:
+    # formatos dd/mm/aaaa, dd.mm.aaaa, dd-mm-aaaa
+    for fmt in ["%d/%m/%Y", "%d.%m.%Y", "%d-%m-%Y"]:
         try:
-            return datetime.strptime(texto_data, fmt).date()
-        except Exception:
-            continue
+            return datetime.datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            pass
 
-    # tenta heurísticas simples, ex: "27/10/2025 - 10:30"
-    # tenta recortar só a parte antes do espaço com hora
-    pedacos = texto_data.split()
-    if len(pedacos) >= 1:
-        bruto = pedacos[0]
-        for fmt in formatos:
-            try:
-                return datetime.strptime(bruto, fmt).date()
-            except Exception:
-                pass
-
-    return None
-
-
-def extrair_primeiro(sel_list, parent):
-    """
-    Dada uma lista de seletores CSS possíveis, retorna o texto (ou href se for <a>) do primeiro que existir.
-    """
-    if not sel_list:
-        return None
-    for css in sel_list:
-        el = parent.select_one(css)
-        if el:
-            # se for link e tiver href, devolve href
-            if el.name == "a" and el.get("href"):
-                return el.get("href").strip()
-            # senão devolve texto
-            txt = el.get_text(" ", strip=True)
-            if txt:
-                return txt
-    return None
-
-
-def construir_url_absoluta(href, base):
-    if not href:
-        return None
-    if href.startswith("http://") or href.startswith("https://"):
-        return href
-    # se veio "/noticia/abc", junta com domínio base
-    return base.rstrip("/") + "/" + href.lstrip("/")
-
-
-def coletar_noticias(fonte):
-    """
-    Faz request no site, tenta raspar cards de notícia e retorna lista de dicts:
-    {
-        'titulo': ...,
-        'link': ...,
-        'data': date|None,
-        'fonte': ...
-    }
-    """
-    noticias = []
-
-    try:
-        resp = requests.get(fonte["url"], timeout=20, headers={
-            "User-Agent": "Mozilla/
+    # tentar "29 de outubro de 2025"
+    meses = {
+        "janeiro": 1, "fevereiro": 2, "março": 3, "marco": 3, "abril": 4,
+        "maio": 5, "junho": 6, "julho": 7, "agosto": 8,
+        "setembro": 9, "outubro": 10, "novembr
