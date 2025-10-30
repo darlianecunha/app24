@@ -1,47 +1,28 @@
-- nome: "Porto do Itaqui"
-  sigla: "ITAQUI"
-  url: "https://www.portodoitaqui.ma.gov.br/noticias"
-  filtro_css: "article, .noticia, .post, .post-item, .news-item"
-  seletor_titulo: "h2, h3, .title a, .titulo a, .post-title a"
-  seletor_link: "a"
-  seletor_data: "time, .data, .date, .post-date"
+- nome: Porto do Itaqui
+  tipo: rss
+  url: "https://www.portodoitaqui.ma.gov.br/rss"   # se o Itaqui tiver RSS oficial; se não tiver, você pode mudar para tipo: html e selectors
 
-- nome: "Porto de Santos"
-  sigla: "SANTOS"
-  url: "https://www.portodesantos.com.br/noticias/"
-  filtro_css: "article, .card-noticia, .noticia"
-  seletor_titulo: "h2, h3, .title a, .card-title a"
-  seletor_link: "a"
-  seletor_data: "time, .data, .date, .post-date"
+- nome: Porto de Santos
+  tipo: html
+  url: "https://www.portodesantos.com.br/noticias"
+  item_selector: "div.card-noticia, div.noticia, article"
+  title_selector: "h3, h2, .titulo, .card-title"
+  link_selector: "a"
+  date_selector: ".data, time, .card-date"
 
-- nome: "Suape"
-  sigla: "SUAPE"
+- nome: Porto de Suape
+  tipo: html
   url: "https://www.suape.pe.gov.br/noticias"
-  filtro_css: "article, .noticia, .card-noticia, .views-row"
-  seletor_titulo: "h2, h3, .titulo a, .title a"
-  seletor_link: "a"
-  seletor_data: "time, .data, .date, .post-date"
+  item_selector: "div.noticia-item, article, .noticia"
+  title_selector: "h2, h3, .titulo"
+  link_selector: "a"
+  date_selector: ".data, time"
 
-- nome: "Paranaguá / APPA"
-  sigla: "PARANAGUA"
-  url: "https://www.portosdoparana.pr.gov.br/Noticia"
-  filtro_css: "article, .noticia, .views-row"
-  seletor_titulo: "h2, h3, .card-title a, .titulo a"
-  seletor_link: "a"
-  seletor_data: "time, .data, .date, .post-date"
+- nome: Ministério de Portos e Aeroportos
+  tipo: html
+  url: "https://www.gov.br/portos-e-aeroportos/pt-br/assuntos/noticias"
+  item_selector: "article.portaltype-collective-nitf-content, article.tileItem"
+  title_selector: "h2.tileHeadline, h2 a, .summary .title"
+  link_selector: "a"
+  date_selector: "span.tileInfo, time, .documentPublished"
 
-- nome: "Complexo do Pecém"
-  sigla: "PECEM"
-  url: "https://www.complexodopecem.com.br/noticias/"
-  filtro_css: "article, .noticia, .blog-item, .post"
-  seletor_titulo: "h2, h3, .entry-title a, .post-title a"
-  seletor_link: "a"
-  seletor_data: "time, .data, .date, .post-date"
-
-- nome: "Porto do Açu"
-  sigla: "ACU"
-  url: "https://portodoacu.com.br/noticias/"
-  filtro_css: "article, .noticia, .post, .blog-item"
-  seletor_titulo: "h2, h3, .entry-title a, .post-title a"
-  seletor_link: "a"
-  seletor_data: "time, .data, .date, .post-date"
