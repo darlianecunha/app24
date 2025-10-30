@@ -2,7 +2,7 @@ name: Radar Portos (Brasil)
 
 on:
   schedule:
-    # toda quinta 11:00 UTC (08:00 Fortaleza UTC-3)
+    # toda quinta 11:00 UTC ≈ 08:00 Fortaleza (UTC-3)
     - cron: "0 11 * * 4"
   workflow_dispatch: {}  # habilita botão 'Run workflow' manual
 
